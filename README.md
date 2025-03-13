@@ -1,17 +1,17 @@
 # BostonDynamicsPBL_projects
 
-## src/detect_object.py
+## Task 1
 
-Detect objects in an image using OpenCV
+Detect objects poses in an image using OpenCV and Scikit Learn
 
 Usage:
 
 ```console
-python detect_object.py <image_path>
+python task1.py <image_path>
 ```
 
 To use the provided pixi python environment:
 
 ```console
-pixi run python detect_object.py <image_path>
+pixi run python task1.py <image_path>
 ```
