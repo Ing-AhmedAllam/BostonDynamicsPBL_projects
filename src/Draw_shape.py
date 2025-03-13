@@ -31,7 +31,7 @@ def generate_random_shapes(width=800, height=600, background_color=(255, 255, 25
         shape_type = random.choice(shape_types)
 
         # Random color (B, G, R)
-        color = (255, 255, 0) #yellow
+        color = (0, 255, 255) #yellow
 
         # Random position
         x = random.randint(0, width - 1)
@@ -51,11 +51,10 @@ def generate_random_shapes(width=800, height=600, background_color=(255, 255, 25
             x = min(max(size, x), width - size)
             y = min(max(size, y), height - size)
             if fill:
-            cv2.circle(img, (x, y), size, color, -1)
+                cv2.circle(img, (x, y), size, color, -1)
             else:
-            cv2.circle(img, (x, y), size, color, thickness)
-
-            elif shape_type == "rectangle":
+                cv2.circle(img, (x, y), size, color, thickness)
+        elif shape_type == "rectangle":
             # Ensure the rectangle is inside the image
             x2 = min(x + size, width - 1)
             y2 = min(y + size, height - 1)
@@ -95,3 +94,142 @@ def show_image(img):
     plt.imshow(img_rgb)
     plt.axis('off')
     plt.show()
+    
+
+epsilon = 10 
+
+def is_overlapping(shape, dimensions, existing_shapes):
+    """This function detects overlapping shapes
+
+    Args:
+        shape (str): A string that specifies the shape's type
+        dimensions (list): A list of the shape's dimensions
+        existing_shapes (List): A list of lists that contains existing shapes
+
+    Returns:
+        Bool: True: if the shape is overlapping and False if not
+    """
+    
+    if shape == 'circle':
+        center, radius = dimensions
+        for ex_shape, ex_dimensions in existing_shapes:
+            if ex_shape == 'circle':
+                ex_center, ex_radius = ex_dimensions
+                dist = np.sqrt((center[0] - ex_center[0])**2 + (center[1] - ex_center[1])**2)
+                if dist < radius + ex_radius + epsilon:
+                    return True
+            elif ex_shape == 'rectangle':
+                start, end = ex_dimensions
+                dist1 = np.sqrt((center[0] - start[0])**2 + (center[1] - start[1])**2)
+                dist2 = np.sqrt((center[0] - end[0])**2 + (center[1] - end[1])**2)
+                dist3 = np.sqrt((center[0] - start[0])**2 + (center[1] - end[1])**2)
+                dist4 = np.sqrt((center[0] - end[0])**2 + (center[1] - start[1])**2)
+                if dist1 < radius + epsilon or dist2 < radius + epsilon or dist3 < radius + epsilon or dist4 < radius + epsilon:
+                    return True
+                elif center[0] > start[0] and center[0] < end[0] and center[1] > start[1] and center[1] < end[1]:
+                    return True
+                elif (center[0] + radius + epsilon > start[0] and center[1] > start[1] and center[1] < end[1]) \
+                    or (center[0] - radius - epsilon < end[0] and center[1] > start[1] and center[1] < end[1])\
+                    or (center[1] + radius + epsilon > start[1] and center[0] > start[0] and center[0] < end[0])\
+                    or (center[1] - radius - epsilon < end[1] and center[0] > start[0] and center[0] < end[0]):
+                    return True
+            elif ex_shape == 'ellipse':
+                ex_center, ex_axes = ex_dimensions
+                dist = np.sqrt((center[0] - ex_center[0])**2 + (center[1] - ex_center[1])**2)
+                if dist < radius + max(ex_axes[0], ex_axes[1])+ epsilon:
+                    return True
+    if shape == 'rectangle':
+        start, end = dimensions
+        for ex_shape, ex_dimensions in existing_shapes:
+            if ex_shape == 'circle':
+                ex_center, ex_radius = ex_dimensions
+                dist1 = np.sqrt((ex_center[0] - start[0])**2 + (ex_center[1] - start[1])**2)
+                dist2 = np.sqrt((ex_center[0] - end[0])**2 + (ex_center[1] - end[1])**2)
+                dist3 = np.sqrt((ex_center[0] - start[0])**2 + (ex_center[1] - end[1])**2)
+                dist4 = np.sqrt((ex_center[0] - end[0])**2 + (ex_center[1] - start[1])**2)
+                if dist1 < ex_radius + epsilon or dist2 < ex_radius + epsilon or dist3 < ex_radius + epsilon or dist4 < ex_radius + epsilon:
+                    return True
+                elif ex_center[0] > start[0] and ex_center[0] < end[0] and ex_center[1] > start[1] and ex_center[1] < end[1]:
+                    return True
+                elif (ex_center[0] + ex_radius + epsilon > start[0] and ex_center[1] > start[1] and ex_center[1] < end[1]) \
+                    or (ex_center[0] - ex_radius - epsilon < end[0] and ex_center[1] > start[1] and ex_center[1] < end[1])\
+                    or (ex_center[1] + ex_radius + epsilon > start[1] and ex_center[0] > start[0] and ex_center[0] < end[0])\
+                    or (ex_center[1] - ex_radius - epsilon < end[1] and ex_center[0] > start[0] and ex_center[0] < end[0]):
+                    return True
+            elif ex_shape == 'rectangle':
+                ex_start, ex_end = ex_dimensions
+                if start[0] < ex_end[0] and end[0] > ex_start[0] and start[1] < ex_end[1] and end[1] > ex_start[1]:
+                    return True
+            elif ex_shape == 'ellipse':
+                ex_center, ex_axes = ex_dimensions
+                if start[0] < ex_center[0] + ex_axes[0] and end[0] > ex_center[0] - ex_axes[0] and start[1] < ex_center[1] + ex_axes[1] and end[1] > ex_center[1] - ex_axes[1]:
+                    return True
+    if shape == 'ellipse':  
+        center, axes = dimensions
+        for ex_shape, ex_dimensions in existing_shapes:
+            if ex_shape == 'circle':
+                ex_center, ex_radius = ex_dimensions
+                dist = np.sqrt((center[0] - ex_center[0])**2 + (center[1] - ex_center[1])**2)
+                if dist < max(axes[0], axes[1]) + ex_radius + epsilon:
+                    return True
+            elif ex_shape == 'rectangle':
+                ex_start, ex_end = ex_dimensions
+                if center[0] < ex_end[0] and center[0] > ex_start[0] and center[1] < ex_end[1] and center[1] > ex_start[1]:
+                    return True
+            elif ex_shape == 'ellipse':
+                ex_center, ex_axes = ex_dimensions
+                dist = np.sqrt((center[0] - ex_center[0])**2 + (center[1] - ex_center[1])**2)
+                if dist < max(axes[0], axes[1]) + max(ex_axes[0], ex_axes[1]) + epsilon:
+                    return True
+    return False
+
+
+def draw_shapes(width=800, height=600, background_color=(255, 255, 255), 
+                num_shapes = 10 ,shape_types=['circle', 'rectangle', 'ellipse']):
+    """This function draws random shapes on the image
+    
+    Raises:
+        ValueError: Raises an error if the shape is not valid
+    """
+    
+    # Create a background image
+    image = np.ones((height, width, 3), dtype=np.uint8)
+    image[:] = background_color
+    
+    # Draw random yellow shapes without overlap
+    existing_shapes = []
+    
+    for _ in range(num_shapes):
+        # Randomly select a shape
+        shape = random.choice(shape_types)
+        
+        if shape == 'circle':
+            while True:
+                center = (random.randint(50, width - 50), random.randint(50, height - 50))
+                radius = random.randint(30, 100)
+                if not is_overlapping(shape, (center, radius), existing_shapes):
+                    cv2.circle(image, center, radius, (0, 255, 255), -1)
+                    existing_shapes.append((shape, (center, radius)))
+                    break
+        elif shape == 'rectangle':
+            while True:
+                start = (random.randint(50, width - 50), random.randint(50, height - 50))
+                end = (random.randint(50, width - 50), random.randint(50, height - 50))
+                
+                if not is_overlapping(shape, (start, end), existing_shapes) and (start != end or start[0] != end[0] or start[1] != end[1]): 
+                    cv2.rectangle(image, start, end, (0, 255, 255), -1)
+                    existing_shapes.append((shape, (start, end)))
+                    break
+        elif shape == 'ellipse':
+            while True:
+                center = (random.randint(50, width - 50), random.randint(50, height - 50))
+                axes = (random.randint(30, 100), random.randint(20, 60))
+                angle = random.randint(0, 360)
+                if not is_overlapping(shape, (center, axes), existing_shapes):
+                    cv2.ellipse(image, center, axes, angle, 0, 360, (0, 255, 255), -1)
+                    existing_shapes.append((shape, (center, axes)))
+                    break
+        else:
+            raise ValueError('Invalid shape')    
+        
+    return image, existing_shapes

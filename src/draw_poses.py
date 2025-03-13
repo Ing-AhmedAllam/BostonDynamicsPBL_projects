@@ -1,12 +1,5 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[17]:
-
-
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 
 def visualize_pose(image, poses, arrow_length_factor=0.8, save_path=None):
     """
@@ -60,6 +53,11 @@ def visualize_pose(image, poses, arrow_length_factor=0.8, save_path=None):
         draw_directional_arrow(vis_image, center, major_axis, major_length, arrow_length_factor, arrow_color, thickness=2)
         draw_directional_arrow(vis_image, center, minor_axis, minor_length, arrow_length_factor, arrow_color, thickness=2)
         
+        # Draw the gripper
+        cv2.line(image,(int(center[0]+minor_axis[0]*(minor_length + 10) -major_axis[0]*30),int(center[1]+minor_axis[1]*(minor_length + 10) -major_axis[1]*30)),(int(center[0]+minor_axis[0]*(minor_length + 10) +major_axis[0]*30),int(center[1]+minor_axis[1]*(minor_length + 10) +major_axis[1]*30)),(255,255,255),2)
+        cv2.line(image,(int(center[0]-minor_axis[0]*(minor_length + 10) -major_axis[0]*30),int(center[1]-minor_axis[1]*(minor_length + 10) -major_axis[1]*30)),(int(center[0]-minor_axis[0]*(minor_length + 10) +major_axis[0]*30),int(center[1]-minor_axis[1]*(minor_length + 10) +major_axis[1]*30)),(255,255,255),2)
+        
+        
         # Add text labels
         cv2.putText(vis_image, f"Object {i}", (center_x + 10, center_y + 10), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
@@ -69,12 +67,6 @@ def visualize_pose(image, poses, arrow_length_factor=0.8, save_path=None):
     # Display or save the visualization
     if save_path:
         cv2.imwrite(save_path, vis_image)
-    else:
-        plt.figure(figsize=(12, 8))
-        plt.imshow(cv2.cvtColor(vis_image, cv2.COLOR_BGR2RGB))
-        plt.axis('off')
-        plt.tight_layout()
-        plt.show()
     
     return vis_image
 
@@ -104,27 +96,3 @@ def draw_directional_arrow(image, center, axis_direction, axis_length, length_fa
     # Draw the arrow
     cv2.arrowedLine(image, (arrow_start_x, arrow_start_y), (arrow_end_x, arrow_end_y), 
                    color, thickness, tipLength=0.3)
-
-# Example usage:
-if __name__ == "__main__":
-    # Load an example image
-    image = cv2.imread("sample_image.jpg")
-    
-    # Detect contours (for example)
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    _, binary = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
-    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
-    # Estimate poses
-    # from pose_estimate import pose_estimate
-    poses = pose_estimate(contours)
-    
-    # Visualize the results
-    visualize_pose(image, poses, arrow_length_factor=0.8, save_path="pose_visualization.jpg")
-
-
-# In[ ]:
-
-
-
-
