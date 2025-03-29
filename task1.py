@@ -1,8 +1,8 @@
-from src.Draw_shape import generate_random_shapes, draw_shapes
-from src.detect_shapes import detect_RGBcontours, detect_HSVcontours
-from src.detect_object import detect
-from src.pose_estimate import pose_estimate
-from src.draw_poses import visualize_pose
+from src.task1.Draw_shape import generate_random_shapes, draw_shapes
+from src.task1.detect_shapes import detect_RGBcontours, detect_HSVcontours
+from src.task1.detect_object import detect
+from src.task1.pose_estimate import pose_estimate
+from src.task1.draw_poses import visualize_pose
 
 import os
 import sys
