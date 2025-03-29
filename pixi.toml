@@ -8,8 +8,10 @@ version = "0.1.0"
 
 [tasks]
 
-[dependencies]
-matplotlib = ">=3.10.1,<4"
-
 [pypi-dependencies]
 opencv-python = ">=4.11.0.86, <5"
+ultralytics = ">=8.3.91, <9"
+torch = ">=2.6.0, <3"
+
+[dependencies]
+python = ">=3.13.2,<3.14"
