@@ -36,10 +36,6 @@ def process_video(cap, processing_functions=None):
     cv2.destroyAllWindows()
     cap.release()
 
-# Example processing functions
-def grayscale(frame):
-    return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
 def load_calibration():
     import os
     # Get the directory of the current script
@@ -54,15 +50,15 @@ def load_calibration():
 
 camera_matrix, dist_coeffs = load_calibration()
 
-def detect_apriltags(frame):
+def draw_cube(frame):
     """
-    Detects AprilTags in a frame and draws their outlines.
+    Detects AprilTags in a frame and draw a cube on it
 
     Args:
         frame: Input image frame
 
     Returns:
-        Frame with AprilTag outlines drawn
+        Frame with cube drawn
     """
     processed_frame = frame
 
@@ -75,8 +71,9 @@ def detect_apriltags(frame):
     # Detect AprilTags
     results = detector.detect(gray)
 
-    # Draw detection outlines
     for r in results:
+        # 1. Draw detection outlines
+
         # Convert corners to integer points
         pts = np.array(r.corners, np.int32)
         pts = pts.reshape((-1, 1, 2))
@@ -93,7 +90,7 @@ def detect_apriltags(frame):
         cv2.putText(processed_frame, tag_id, (center[0] - 10, center[1] - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
-        # PnP
+        # 2. PnP
         half_size = 71 / 2 # 18mm
         object_points = np.array([
             [-half_size, -half_size, 0],  # bottom-left
@@ -106,7 +103,7 @@ def detect_apriltags(frame):
         success, rotation_vec, translation_vec = cv2.solvePnP(object_points, image_points, camera_matrix, dist_coeffs)
         rotation_matrix, _ = cv2.Rodrigues(rotation_vec)
 
-        # Draw coordinate axis
+        # 3. Draw coordinate axis
         axis_length = 30  # Length of the axis lines
         axis_points = np.float32([[0, 0, 0], [axis_length, 0, 0], [0, axis_length, 0], [0, 0, axis_length]])
         axis_img_points, _ = cv2.projectPoints(axis_points, rotation_vec, translation_vec, camera_matrix, dist_coeffs)
@@ -116,12 +113,11 @@ def detect_apriltags(frame):
         y_point = tuple(map(int, axis_img_points[2].ravel()))
         z_point = tuple(map(int, axis_img_points[3].ravel()))
 
-        # Draw the axes
         cv2.line(processed_frame, origin, x_point, (0, 0, 255), 2)  # X-axis: Red
         cv2.line(processed_frame, origin, y_point, (0, 255, 0), 2)  # Y-axis: Green
         cv2.line(processed_frame, origin, z_point, (255, 0, 0), 2)  # Z-axis: Blue
 
-        # Define the vertices of a 3D cube centered at the origin (in 3D object coordinate system)
+        # Draw cube
         cube_size = 25  # Size of the cube
         cube_vertices = np.float32([
             [-cube_size, -cube_size, -cube_size],  # 0: back bottom left
