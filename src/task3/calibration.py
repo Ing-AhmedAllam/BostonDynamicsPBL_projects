@@ -1,3 +1,6 @@
+"""
+Calibrate the camera for PnP
+"""
 import numpy as np
 import cv2
 import glob
