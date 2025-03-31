@@ -152,4 +152,4 @@ if __name__ == "__main__":
     cap = setup_video_pipeline(0)
     if cap:
         # Process with multiple functions
-        process_video(cap, [detect_apriltags])
+        process_video(cap, [draw_cube])
