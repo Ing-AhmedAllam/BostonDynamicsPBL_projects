@@ -12,6 +12,7 @@ version = "0.1.0"
 opencv-python = ">=4.11.0.86, <5"
 ultralytics = ">=8.3.91, <9"
 torch = ">=2.6.0, <3"
+apriltag = ">=0.0.16, <0.0.17"
 
 [dependencies]
 python = ">=3.13.2,<3.14"

@@ -5,3 +5,4 @@
 
 /.ropeproject/
 /yolo*.pt
+**/.DS_Store

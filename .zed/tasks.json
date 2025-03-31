@@ -1,0 +1,9 @@
+// Static tasks configuration.
+//
+// Example:
+[
+  {
+    "label": "Run AR",
+    "command": "pixi run python src/task3/ar.py"
+  }
+]
