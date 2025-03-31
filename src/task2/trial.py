@@ -86,39 +86,76 @@ def detect_feats_orb(img1: np.array, visualize=False):
     
     return kp1, des1
 
-def match_feats(img1, img2, kp1, kp2, des1, des2, visulize=False):
-    # Use BFMatcher to find matches
-    # bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
-    # matches = bf.match(des1, des2)
-    # # Sort matches by distance
-    # matches = sorted(matches, key=lambda x: x.distance)
+def expand_inliers(inliers,kp1,kp2, all_matches, radius=5):
     
-    bf = cv2.BFMatcher()
-    matches = bf.knnMatch(des1, des2, k=2)
+    expanded_matches = inliers.copy()
+    
+    # Convert inlier keypoints to numpy arrays for spatial search
+    inlier_pts1 = np.float32([kp1[m.queryIdx].pt for m in inliers])
+    inlier_pts2 = np.float32([kp2[m.trainIdx].pt for m in inliers])
+    
+    for match in all_matches:
+        p1 = np.array(kp1[match.queryIdx].pt)
+        p2 = np.array(kp2[match.trainIdx].pt)
+
+        # Check if the point is near any existing inlier
+        if np.any(np.linalg.norm(inlier_pts1 - p1, axis=1) < radius) and \
+            np.any(np.linalg.norm(inlier_pts2 - p2, axis=1) < radius):
+            expanded_matches.append(match)
+
+    return expanded_matches
+
+def match_feats(img1, img2, kp1, kp2, des1, des2, visulize=False):
+    
+    # Create FLANN matcher
+    index_params = dict(algorithm=1, trees=5)  # KDTree for SIFT
+    search_params = dict(checks=50)
+    flann = cv2.FlannBasedMatcher(index_params, search_params)
+    
+    # Match descriptors using KNN
+    matches = flann.knnMatch(des1, des2, k=2)
 
     # Lowe’s ratio test
-    matches = [m for m, n in matches if m.distance < 0.75 * n.distance]
+    good_matches = [m for m, n in matches if m.distance < 0.75 * n.distance]
     
-    print(f"Number of matches: {len(matches)}")
+    # Extract matched keypoints
+    if len(good_matches) > 8:  # At least 8 points for fundamental matrix estimation
+        src_pts = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+        dst_pts = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
 
-    if visulize:
-        # Display the matches
-        img_matches = cv2.drawMatches(
-            img1, kp1, img2, kp2, matches[:50], None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+        # Find Fundamental Matrix using RANSAC
+        F, mask = cv2.findFundamentalMat(src_pts, dst_pts, cv2.FM_RANSAC, 3.0, 0.99)
 
-        # Display matches using matplotlib
-        #Display Image
-        cv2.namedWindow("Matches", cv2.WINDOW_NORMAL)
-        cv2.resizeWindow("Matches", img_matches.shape[1], img_matches.shape[0])
-        cv2.imshow("Matches", img_matches)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        # Use only inliers
+        inlier_matches = [good_matches[i] for i in range(len(mask)) if mask[i]]
+        expanded_matches = expand_inliers(inlier_matches, kp1, kp2, good_matches, radius=5)
         
-        save_path = get_incremented_filename("out")
-        cv2.imwrite(save_path,img_matches)
-        print(f"Images saved to {save_path}")
+        print(f"Number of matches: {len(good_matches)}")
+        print(f"Number of matches after RANSAC: {len(inlier_matches)}")
+        print(f"Number of matches after expanding: {len(expanded_matches)}")
+        
+        if visulize:
+            # Display the matches
+            img_matches = cv2.drawMatches(
+                img1, kp1, img2, kp2, inlier_matches[:50], None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+
+            # Display matches using matplotlib
+            #Display Image
+            cv2.namedWindow("Matches", cv2.WINDOW_NORMAL)
+            cv2.resizeWindow("Matches", img_matches.shape[1], img_matches.shape[0])
+            cv2.imshow("Matches", img_matches)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+            
+            save_path = get_incremented_filename("out")
+            cv2.imwrite(save_path,img_matches)
+            print(f"Images saved to {save_path}")
     
-    return matches
+        return inlier_matches
+    
+    else:
+        print("Not enough matches found")
+        return []
 
 def find_homography(kp1, kp2, matches):
     if len(matches) < 4:
@@ -305,7 +342,7 @@ def searcher(dataset, img1, detector, kp1, des1):
     return img1
         
 if __name__ == "__main__":
-    default_name = "t3"
+    default_name = "t2"
     if len(sys.argv) > 1:
         detector = sys.argv[1]
         if len(sys.argv) == 4:
