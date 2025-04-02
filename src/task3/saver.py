@@ -1,4 +1,5 @@
-import os
+import os   
+import  sys
 
 def get_incremented_filename(base_name, extension=".png"):
     """
@@ -15,8 +16,12 @@ def get_incremented_filename(base_name, extension=".png"):
     """
     
     # Go back to the previous directory and then into the 'tests' folder
-    save_dir = os.path.join(os.getcwd(), "results/task_2")
-    os.makedirs(save_dir, exist_ok=True)  # Create 'results' folder if it doesn't exist
+    try:
+        save_dir = os.path.join(os.getcwd(), "results/task_3")
+        os.makedirs(save_dir, exist_ok=True)  # Create 'results' folder if it doesn't exist
+    except Exception as e:
+        print(f"Error creating directory: {e}")
+        sys.exit(1)
 
     index = 1
     new_name = os.path.join(save_dir, f"{base_name}{extension}")

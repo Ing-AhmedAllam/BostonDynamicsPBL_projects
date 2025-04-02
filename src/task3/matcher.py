@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
+from matplotlib import pyplot as plt
 
+# from saver import get_incremented_filename
 from src.task3.saver import get_incremented_filename
 
 
@@ -92,6 +94,8 @@ def match_feats(img1: np.array, img2: np.array, kp1: list, kp2: list, des1: list
     flann = cv2.FlannBasedMatcher(index_params, search_params)
     
     # Match descriptors using KNN
+    print(f"des1 shape: {des1.shape}")
+    print(f"des2 shape: {des2.shape}")
     matches = flann.knnMatch(des1, des2, k=2)
 
     # Lowe’s ratio test
@@ -99,38 +103,43 @@ def match_feats(img1: np.array, img2: np.array, kp1: list, kp2: list, des1: list
     
     # Extract matched keypoints
     if len(good_matches) > 8:  # At least 8 points for fundamental matrix estimation
-        src_pts = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-        dst_pts = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+        # src_pts = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+        # dst_pts = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
 
-        # Find Fundamental Matrix using RANSAC
-        F, mask = cv2.findFundamentalMat(src_pts, dst_pts, cv2.FM_RANSAC, 3.0, 0.99)
+        # # Find Fundamental Matrix using RANSAC
+        # F, mask = cv2.findFundamentalMat(src_pts, dst_pts, cv2.FM_RANSAC, 3.0, 0.99)
 
-        # Use only inliers
-        inlier_matches = [good_matches[i] for i in range(len(mask)) if mask[i]]
-        expanded_matches = expand_inliers(inlier_matches, kp1, kp2, good_matches, radius=5)
+        # # Use only inliers
+        # inlier_matches = [good_matches[i] for i in range(len(mask)) if mask[i]]
+        
+        # # Ensure that the number of inliers doesn't exceed the number of keypoints in kp2
+        # assert len(inlier_matches) <= len(kp2), "Inliers exceed number of keypoints in image 2"
+        # assert len(good_matches) <= len(kp2), "Good matches exceed number of keypoints in image 2"
+        
+        # expanded_matches = expand_inliers(inlier_matches, kp1, kp2, good_matches, radius=5)
         
         print(f"Number of matches: {len(good_matches)}")
-        print(f"Number of matches after RANSAC: {len(inlier_matches)}")
-        print(f"Number of matches after expanding: {len(expanded_matches)}")
+        # print(f"Number of matches after RANSAC: {len(inlier_matches)}")
+        # print(f"Number of matches after expanding: {len(expanded_matches)}")
         
         if visulize:
             # Display the matches
             img_matches = cv2.drawMatches(
-                img1, kp1, img2, kp2, inlier_matches[:50], None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+                img1, kp1, img2, kp2, good_matches[:50], None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 
             # Display matches using matplotlib
-            #Display Image
-            cv2.namedWindow("Matches", cv2.WINDOW_NORMAL)
-            cv2.resizeWindow("Matches", img_matches.shape[1], img_matches.shape[0])
-            cv2.imshow("Matches", img_matches)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+
+            plt.figure(figsize=(12, 8))
+            plt.imshow(cv2.cvtColor(img_matches, cv2.COLOR_BGR2RGB))
+            plt.title("Matches")
+            plt.axis("off")
+            plt.show()
             
-            save_path = get_incremented_filename("out")
-            cv2.imwrite(save_path,img_matches)
+            save_path = get_incremented_filename("matches")
+            plt.savefig(save_path)
             print(f"Images saved to {save_path}")
-    
-        return expanded_matches
+            plt.close()    
+        return good_matches
     
     else:
         print("Not enough matches found")
