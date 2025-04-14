@@ -1,4 +1,4 @@
-path: ../src/task4/yolo_train/dataset
+path: ../yolo_train/dataset
 train: ../train/images
 val: ../valid/images
 test: ../test/images
